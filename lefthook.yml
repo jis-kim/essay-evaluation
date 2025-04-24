@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: '*.{js,ts,json}'
+      run: echo "💖 Running Prettier and Eslint..." && pnpm exec prettier --write {staged_files} && pnpm exec eslint --fix --no-warn-ignored {staged_files} && git add {staged_files}
+    test:
+      run: echo "🧪 Running Tests..." && pnpm run test
+
+#pre-push:
+#  commands:
+#    e2e-test:
+#      run: echo "🧪 Running E2E Tests..." && pnpm run test:e2e
