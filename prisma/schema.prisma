@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 학생 정보
+model Students {
+  id          Int          @id @default(autoincrement())
+  studentName String       @map("student_name") @db.VarChar(100)
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  submissions Submission[]
+
+  @@map("students")
+}
+
+// 과제 제출 정보
+model Submission {
+  id                  String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  studentId           Int              @map("student_id") @db.Integer
+  student             Students         @relation(fields: [studentId], references: [id])
+  componentType       String           @map("component_type") @db.VarChar(100)
+  submitText          String           @map("submit_text") @db.Text
+  highlightSubmitText String?          @map("highlight_submit_text") @db.Text
+  result              Json?            @db.JsonB
+  score               Int?             @db.Integer
+  feedback            String?          @db.VarChar(255)
+  highlights          String[]         @db.Text
+  status              SubmissionStatus @default(PENDING)
+  createdAt           DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  mediaUrls           SubmissionMedia?
+  logs                SubmissionLog[]
+  revisions           Revision[]
+
+  @@unique([studentId, componentType])
+  @@index([studentId])
+  @@map("submissions")
+}
+
+// 제출물 미디어 정보
+model SubmissionMedia {
+  id           String     @id @default(uuid()) @db.Uuid
+  submissionId String     @unique @map("submission_id") @db.Uuid
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  videoUrl     String?    @map("video_url") @db.VarChar(512)
+  audioUrl     String?    @map("audio_url") @db.VarChar(512)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("submission_media")
+}
+
+// 평가,재평가 호출 로그. latency, traceId
+model SubmissionLog {
+  id           String     @id @default(uuid()) @db.Uuid
+  submissionId String     @map("submission_id") @db.Uuid
+  revisionId   String?    @map("revision_id") @db.Uuid
+  submission   Submission @relation(fields: [submissionId], references: [id])
+  latency      Int        @db.Integer
+  traceId      String     @map("trace_id") @db.VarChar(100)
+  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("submission_logs")
+}
+
+// 재평가 이력
+model Revision {
+  id                  String         @id @default(uuid()) @db.Uuid
+  submissionId        String         @map("submission_id") @db.Uuid
+  submission          Submission     @relation(fields: [submissionId], references: [id])
+  submitText          String         @map("submit_text") @db.Text
+  highlightSubmitText String?        @map("highlight_submit_text") @db.Text
+  result              Json?          @db.JsonB
+  score               Int?           @db.Integer
+  feedback            String?        @db.VarChar(255)
+  highlights          String[]       @db.Text
+  status              RevisionStatus @default(PENDING)
+  createdAt           DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("revisions")
+}
+
+// 일간 통계
+model DailyStats {
+  id           Int      @id @default(autoincrement())
+  date         DateTime @db.Date
+  totalCount   Int      @default(0) @map("total_count")
+  successCount Int      @default(0) @map("success_count")
+  failCount    Int      @default(0) @map("fail_count")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+
+  @@unique([date])
+  @@index([date])
+  @@map("stats_daily")
+}
+
+// 주간 통계
+model WeeklyStats {
+  id           Int      @id @default(autoincrement())
+  startDate    DateTime @map("start_date") @db.Date // 주의 시작일
+  endDate      DateTime @map("end_date") @db.Date // 주의 마지막일
+  totalCount   Int      @default(0) @map("total_count")
+  successCount Int      @default(0) @map("success_count")
+  failCount    Int      @default(0) @map("fail_count")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+
+  @@unique([startDate])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("stats_weekly")
+}
+
+// 월간 통계
+model MonthlyStats {
+  id           Int      @id @default(autoincrement())
+  yearMonth    Int      @map("year_month") // 예: 202403 형식
+  startDate    DateTime @map("start_date") @db.Date // 월의 시작일
+  endDate      DateTime @map("end_date") @db.Date // 월의 마지막일
+  totalCount   Int      @default(0) @map("total_count")
+  successCount Int      @default(0) @map("success_count")
+  failCount    Int      @default(0) @map("fail_count")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+
+  @@unique([yearMonth])
+  @@index([yearMonth])
+  @@map("stats_monthly")
+}
+
+enum SubmissionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RevisionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
