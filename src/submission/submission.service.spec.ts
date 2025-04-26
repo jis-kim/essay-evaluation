@@ -75,6 +75,7 @@ describe('SubmissionService', () => {
     it('성공적으로 제출을 생성해야 합니다', async () => {
       jest.spyOn(studentRepository, 'findById').mockResolvedValue(mockStudent);
       jest.spyOn(submissionRepository, 'findByStudentAndComponent').mockResolvedValue(null);
+      jest.spyOn(submissionRepository, 'create').mockResolvedValue(mockSubmission as Submission);
 
       const result = await service.createSubmission(mockCreateSubmissionDto);
 
