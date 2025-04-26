@@ -17,7 +17,7 @@ export const envSchema = z.object({
   // Azure OpenAI
   AZURE_ENDPOINT_URL: z.string().url(),
   AZURE_ENDPOINT_KEY: z.string(),
-  OPEN_API_VERSION: z.string(),
+  OPENAI_API_VERSION: z.string(),
   AZURE_OPENAI_DEPLOYMENT_NAME: z.string(),
 
   // Azure Blob Storage

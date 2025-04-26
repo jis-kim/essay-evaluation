@@ -19,7 +19,7 @@ export const jwtConfig = registerAs('jwt', () => ({
 export const azureOpenAIConfig = registerAs('azureOpenAI', () => ({
   endpointUrl: process.env.AZURE_ENDPOINT_URL,
   apiKey: process.env.AZURE_ENDPOINT_KEY,
-  apiVersion: process.env.OPEN_API_VERSION,
+  apiVersion: process.env.OPENAI_API_VERSION,
   deploymentName: process.env.AZURE_OPENAI_DEPLOYMENT_NAME,
 }));
 

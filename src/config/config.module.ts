@@ -2,7 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { AppConfigService } from './config.service';
-import { databaseConfig, azureOpenAIConfig, azureBlobConfig } from './configuration';
+import { databaseConfig, azureOpenAIConfig, azureBlobConfig, jwtConfig, appConfig } from './configuration';
 import { envSchema } from './env.validation';
 
 @Global()
@@ -19,7 +19,7 @@ import { envSchema } from './env.validation';
       },
       //isGlobal: true,
       cache: true,
-      load: [databaseConfig, azureOpenAIConfig, azureBlobConfig],
+      load: [databaseConfig, azureOpenAIConfig, azureBlobConfig, jwtConfig, appConfig],
     }),
   ],
   providers: [AppConfigService],
