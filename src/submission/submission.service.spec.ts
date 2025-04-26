@@ -2,8 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Submission, SubmissionStatus } from '@prisma/client';
 
-import { StudentRepository } from '../prisma/repository/student.repository';
-import { SubmissionRepository } from '../prisma/repository/submission.repository';
+import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 import { SubmissionService } from './submission.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 

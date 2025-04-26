@@ -22,7 +22,6 @@ async function bootstrap(): Promise<void> {
     .setTitle('Essay Evaluation API')
     .setDescription('에세이 평가 시스템 API 문서')
     .setVersion('1.0')
-    .addTag('submissions', '에세이 제출 관련 API')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

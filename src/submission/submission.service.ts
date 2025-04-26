@@ -4,8 +4,7 @@ import { Prisma, Submission, SubmissionStatus } from '@prisma/client';
 // 필요한 서비스 모듈들은 나중에 구현 후 주석 해제
 // import { AiService } from '../ai/ai.service';
 // import { BlobService } from '../blob/blob.service';
-import { StudentRepository } from '../prisma/repository/student.repository';
-import { SubmissionRepository } from '../prisma/repository/submission.repository';
+import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 // import { VideoService } from '../video/video.service';
 
 import { CreateSubmissionDto } from './dto/create-submission.dto';
