@@ -19,11 +19,11 @@ export class StudentRepository {
     return this.prisma.student.findMany();
   }
 
-  async update(id: string, data: Partial<Student>): Promise<Student> {
-    return this.prisma.student.update({ where: { id: Number(id) }, data });
+  async update(id: number, data: Partial<Student>): Promise<Student> {
+    return this.prisma.student.update({ where: { id }, data });
   }
 
-  async delete(id: string): Promise<Student> {
-    return this.prisma.student.delete({ where: { id: Number(id) } });
+  async delete(id: number): Promise<Student> {
+    return this.prisma.student.delete({ where: { id } });
   }
 }
