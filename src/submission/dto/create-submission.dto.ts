@@ -3,12 +3,12 @@ import { Type } from 'class-transformer';
 import { IsNumber, IsString } from 'class-validator';
 
 export class CreateSubmissionDto {
-  @ApiProperty({ description: '학생 ID', example: 123 })
+  @ApiProperty({ description: '학생 ID', example: 1 })
   @IsNumber()
   @Type(() => Number)
   studentId!: number;
 
-  @ApiProperty({ description: '학생 이름', example: '홍길동' })
+  @ApiProperty({ description: '학생 이름', example: '김민준' })
   @IsString()
   studentName!: string;
 

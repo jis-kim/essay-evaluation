@@ -96,6 +96,7 @@ export class SubmissionService {
 
     // 7. 제출 정보 DB 저장 - Prisma 스키마에 맞게 필드 조정
     // 8. submission log 저장
+    // NOTE: check unique constraint and catch error - lace condition으로 인한 unique 제약 조건 위반 방지
     //const submission = await this.submissionRepository.create({
     //  student: { connect: { id: studentId } },
     //  componentType,
