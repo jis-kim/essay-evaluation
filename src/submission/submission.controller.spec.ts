@@ -90,7 +90,10 @@ describe('SubmissionController', () => {
 
       const result = await controller.createSubmission(mockVideoFile, mockCreateSubmissionDto);
 
-      expect(service.createSubmission).toHaveBeenCalledWith(mockCreateSubmissionDto);
+      expect(service.createSubmission).toHaveBeenCalledWith({
+        videoFile: mockVideoFile,
+        createSubmissionDto: mockCreateSubmissionDto,
+      });
       expect(result).toEqual(mockSubmissionResponse);
     });
   });

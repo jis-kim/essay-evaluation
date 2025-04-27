@@ -74,6 +74,6 @@ export class SubmissionController {
     @UploadedFile() videoFile: Express.Multer.File,
     @Body() createSubmissionDto: CreateSubmissionDto,
   ): Promise<SubmissionResponseDto> {
-    return this.submissionService.createSubmission(createSubmissionDto);
+    return this.submissionService.createSubmission({ videoFile, createSubmissionDto });
   }
 }
