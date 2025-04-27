@@ -23,10 +23,6 @@ export class SubmissionRepository {
     return this.prisma.submission.update({ where: { id }, data });
   }
 
-  async delete(id: string): Promise<Submission> {
-    return this.prisma.submission.delete({ where: { id } });
-  }
-
   // 학생 ID와 컴포넌트 타입으로 제출 정보 찾기
   async findByStudentAndComponent(studentId: number, componentType: string): Promise<Submission | null> {
     return this.prisma.submission.findUnique({
@@ -38,6 +34,4 @@ export class SubmissionRepository {
       },
     });
   }
-
-  // 필요에 따라 추가 메서드 구현 가능
 }
