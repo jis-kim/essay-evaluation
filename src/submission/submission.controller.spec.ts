@@ -5,6 +5,14 @@ import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { SubmissionController } from './submission.controller';
 import { SubmissionService } from './submission.service';
 
+// 컨트롤러 메서드를 모킹하기 위한 타입 정의
+type MockSubmissionController = {
+  createSubmission: (
+    videoFile: Express.Multer.File | undefined,
+    createSubmissionDto: CreateSubmissionDto,
+  ) => Promise<SubmissionResponseDto>;
+};
+
 describe('SubmissionController', () => {
   let controller: SubmissionController;
   let service: SubmissionService;
@@ -15,6 +23,30 @@ describe('SubmissionController', () => {
     componentType: 'ESSAY',
     submitText: '테스트 에세이 내용',
   };
+
+  const mockVideoFile = {
+    fieldname: 'videoFile',
+    originalname: 'test-video.mp4',
+    encoding: '7bit',
+    mimetype: 'video/mp4',
+    buffer: Buffer.from('test'),
+    size: 1024,
+    path: '/uploads/temp/01HQX7A8DGST7S3N2J4D0KKQN8.mp4',
+    destination: './uploads/temp',
+    filename: '01HQX7A8DGST7S3N2J4D0KKQN8.mp4',
+  } as Express.Multer.File;
+
+  const mockInvalidVideoFile = {
+    ...mockVideoFile,
+    mimetype: 'video/avi',
+    originalname: 'invalid-video.avi',
+  } as Express.Multer.File;
+
+  const mockLargeVideoFile = {
+    ...mockVideoFile,
+    size: 100 * 1024 * 1024, // 100MB (넘 큰 파일)
+    originalname: 'large-video.mp4',
+  } as Express.Multer.File;
 
   const mockSubmissionResponse = {
     studentId: 1,
@@ -56,11 +88,13 @@ describe('SubmissionController', () => {
     it('성공적으로 제출을 생성해야 합니다', async () => {
       jest.spyOn(service, 'createSubmission').mockResolvedValue(mockSubmissionResponse);
 
-      const result = await controller.createSubmission(mockCreateSubmissionDto);
+      const result = await controller.createSubmission(mockCreateSubmissionDto, mockVideoFile);
 
-      expect(result).toBeDefined();
+      expect(service.createSubmission).toHaveBeenCalledWith({
+        videoFile: mockVideoFile,
+        createSubmissionDto: mockCreateSubmissionDto,
+      });
       expect(result).toEqual(mockSubmissionResponse);
-      expect(service.createSubmission).toHaveBeenCalledWith(mockCreateSubmissionDto);
     });
   });
 });
