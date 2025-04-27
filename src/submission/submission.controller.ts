@@ -11,24 +11,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { ulid } from 'ulid';
 
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { SubmissionService } from './submission.service';
-
-// Swagger 문서화를 위한 확장 DTO
-class CreateSubmissionWithFileDto extends CreateSubmissionDto {
-  @ApiProperty({
-    type: 'string',
-    format: 'binary',
-    description: 'MP4 비디오 파일 (최대 50MB)',
-    required: true,
-  })
-  videoFile!: Express.Multer.File;
-}
 
 @ApiTags('submissions')
 @Controller('submissions')
@@ -41,7 +30,22 @@ export class SubmissionController {
   })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
-    type: CreateSubmissionWithFileDto,
+    schema: {
+      type: 'object',
+      properties: {
+        studentId: { type: 'number', example: 1 },
+        studentName: { type: 'string', example: '김민준' },
+        componentType: { type: 'string', example: 'Essay Writing' },
+        submitText: { type: 'string', example: 'Hello my name is ...' },
+        videoFile: {
+          type: 'string',
+          format: 'binary',
+          description: 'MP4 비디오 파일 (최대 50MB)',
+          nullable: true, // optional 설정
+        },
+      },
+      required: ['studentId', 'studentName', 'componentType', 'submitText'],
+    },
   })
   @ApiOkResponse({
     type: SubmissionResponseDto,
