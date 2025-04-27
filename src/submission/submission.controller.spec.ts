@@ -88,7 +88,7 @@ describe('SubmissionController', () => {
     it('성공적으로 제출을 생성해야 합니다', async () => {
       jest.spyOn(service, 'createSubmission').mockResolvedValue(mockSubmissionResponse);
 
-      const result = await controller.createSubmission(mockVideoFile, mockCreateSubmissionDto);
+      const result = await controller.createSubmission(mockCreateSubmissionDto, mockVideoFile);
 
       expect(service.createSubmission).toHaveBeenCalledWith({
         videoFile: mockVideoFile,

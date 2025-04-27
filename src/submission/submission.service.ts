@@ -21,10 +21,10 @@ export class SubmissionService {
     videoFile,
     createSubmissionDto,
   }: {
-    videoFile: Express.Multer.File;
     createSubmissionDto: CreateSubmissionDto;
+    videoFile?: Express.Multer.File;
   }): Promise<SubmissionResponseDto> {
-    const startTime = Date.now(); // API 지연시간 측정 시작
+    const startTime = Date.now(); // FIXME: API 지연시간 측정 시작
     const { studentId, studentName, componentType, submitText } = createSubmissionDto;
 
     // 1. 학생 조회
@@ -48,6 +48,8 @@ export class SubmissionService {
       try {
         processedVideoInfo = await this.videoProcessingService.processVideo(videoFile.path);
       } catch (error) {
+        // TODO: remove all saved files in this process
+        // HOWTO: videoFile.path* 파일 제거
         throw new InternalServerErrorException((error as Error).message);
       }
     }
@@ -94,7 +96,7 @@ export class SubmissionService {
     // 8. 제출 정보 DB 저장 - Prisma 스키마에 맞게 필드 조정
     // 9. submission log 저장
 
-    // API 지연시간 계산
+    // FIXME: API 지연시간 계산
     const apiLatency = Date.now() - startTime;
 
     // DTO 클래스의 정적 메소드를 사용하여 응답 변환
