@@ -25,8 +25,8 @@ describe('SubmissionService', () => {
     id: 'uuid-type',
     studentId: 1,
     componentType: 'ESSAY',
-    submitText: '테스트 에세이 내용',
-    highlightSubmitText: '테스트 에세이 내용',
+    submitText: "It's good expression, Grammar issues",
+    highlightSubmitText: "It's <b>good expression</b>, <b>Grammar issues</b>",
     score: 8,
     feedback: 'Good essay.',
     highlights: ['Good expression', 'Grammar issues'],
@@ -44,7 +44,7 @@ describe('SubmissionService', () => {
     studentId: 1,
     studentName: '김땡삼',
     componentType: 'ESSAY',
-    submitText: '테스트 에세이 내용',
+    submitText: "It's good expression, Grammar issues",
   };
 
   const mockVideoFile = {
@@ -126,12 +126,12 @@ describe('SubmissionService', () => {
         mockCreateSubmissionDto.studentId,
         mockCreateSubmissionDto.componentType,
       );
+      expect(videoProcessingService.processVideo).toHaveBeenCalledWith(mockVideoFile.path);
       expect(submissionRepository.create).toHaveBeenCalledWith({
         student: { connect: { id: mockCreateSubmissionDto.studentId } },
         componentType: mockCreateSubmissionDto.componentType,
         submitText: mockCreateSubmissionDto.submitText,
       });
-      expect(videoProcessingService.processVideo).toHaveBeenCalledWith(mockVideoFile.path);
 
       // 응답 검증
       expect(result).toBeInstanceOf(SubmissionResponseDto);
@@ -150,8 +150,8 @@ describe('SubmissionService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
       expect(studentRepository.findById).toHaveBeenCalledTimes(1);
-      expect(submissionRepository.create).not.toHaveBeenCalled();
       expect(videoProcessingService.processVideo).not.toHaveBeenCalled();
+      expect(submissionRepository.create).not.toHaveBeenCalled();
     });
 
     it('이미 제출한 경우 ConflictException을 던져야 합니다', async () => {
@@ -166,14 +166,8 @@ describe('SubmissionService', () => {
       ).rejects.toThrow(ConflictException);
       expect(studentRepository.findById).toHaveBeenCalledTimes(1);
       expect(submissionRepository.findByStudentAndComponent).toHaveBeenCalledTimes(1);
-      expect(submissionRepository.create).not.toHaveBeenCalled();
       expect(videoProcessingService.processVideo).not.toHaveBeenCalled();
-    });
-
-    it('비디오 및 ai 처리 전 submission정보를 저장해야 합니다.', async () => {
-      jest.spyOn(studentRepository, 'findById').mockResolvedValue(mockStudent);
-      jest.spyOn(submissionRepository, 'findByStudentAndComponent').mockResolvedValue(null);
-      jest.spyOn(submissionRepository, 'create').mockResolvedValue(mockSubmission as Submission);
+      expect(submissionRepository.create).not.toHaveBeenCalled();
     });
 
     it('비디오 처리 중 오류가 발생하면 InternalServerErrorException을 던져야 합니다', async () => {
@@ -190,8 +184,8 @@ describe('SubmissionService', () => {
       ).rejects.toThrow(InternalServerErrorException);
       expect(studentRepository.findById).toHaveBeenCalledTimes(1);
       expect(submissionRepository.findByStudentAndComponent).toHaveBeenCalledTimes(1);
-      expect(submissionRepository.create).toHaveBeenCalledTimes(1);
       expect(videoProcessingService.processVideo).toHaveBeenCalledTimes(1);
+      expect(submissionRepository.create).not.toHaveBeenCalled();
     });
   });
 
