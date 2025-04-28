@@ -1,13 +1,20 @@
+jest.mock('fluent-ffmpeg');
+jest.mock('fs', () => ({
+  promises: {
+    readdir: jest.fn(),
+    unlink: jest.fn(),
+  },
+  existsSync: jest.fn(),
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
-import { VideoProcessingService } from './video-processing.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { VideoProcessingService } from './video-processing.service';
 import { MEDIA_DIR } from '../common/constants/media.constants';
 
-// ffmpeg 모듈을 모킹
-jest.mock('fluent-ffmpeg');
 const mockedFfmpeg = ffmpeg as jest.MockedFunction<typeof ffmpeg>;
 
 describe('VideoProcessingService', () => {
