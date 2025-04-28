@@ -47,12 +47,10 @@ export class BlobStorageService {
    * @param contentType 컨텐츠 타입 (기본값: application/octet-stream)
    * @returns SAS URL
    */
-  async uploadFileAndGetSasUrl(
-    filePath: string,
-    blobName: string,
-    contentType = 'application/octet-stream',
-  ): Promise<string> {
+  async uploadFileAndGetSasUrl(filePath: string, blobName: string): Promise<string> {
     try {
+      let contentType = 'application/octet-stream';
+
       // 파일이 존재하는지 확인
       if (!fs.existsSync(filePath)) {
         throw new Error(`파일이 존재하지 않습니다: ${filePath}`);

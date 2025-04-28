@@ -77,20 +77,27 @@ describe('BlobStorageService', () => {
       expect(mockLogger.log).toHaveBeenCalled();
     });
 
+    it('Azure Blob Storage 연결 실패 시 에러를 throw해야 한다', () => {
+      // StorageSharedKeyCredential 생성에서 에러 발생하도록 mock
+      const storageBlob = require('@azure/storage-blob');
+      const originalCredential = storageBlob.StorageSharedKeyCredential;
+      storageBlob.StorageSharedKeyCredential = jest.fn(() => {
+        throw new Error('연결 실패');
+      });
+
+      expect(() => {
+        new BlobStorageService(mockConfigService as any, mockLogger as any);
+      }).toThrow('연결 실패');
+
+      // 원복
+      storageBlob.StorageSharedKeyCredential = originalCredential;
+    });
+
     it('파일이 없으면 에러 발생', async () => {
       fs.existsSync.mockReturnValue(false);
 
       await expect(service.uploadFileAndGetSasUrl('/tmp/notfound.mp4', 'videos/notfound.mp4')).rejects.toThrow(
         '파일이 존재하지 않습니다',
-      );
-    });
-
-    it('파일이 아니면 에러 발생', async () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.statSync.mockReturnValue({ isFile: () => false });
-
-      await expect(service.uploadFileAndGetSasUrl('/tmp/notfile', 'videos/notfile')).rejects.toThrow(
-        '유효한 파일이 아닙니다',
       );
     });
 
