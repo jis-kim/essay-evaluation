@@ -17,9 +17,11 @@ const mockLogger = {
 };
 
 jest.mock('fs', () => ({
-  existsSync: jest.fn(),
-  statSync: jest.fn(),
-  readFileSync: jest.fn(),
+  promises: {
+    access: jest.fn(),
+    stat: jest.fn(),
+    readFile: jest.fn(),
+  },
 }));
 
 jest.mock('@azure/storage-blob', () => ({
@@ -67,9 +69,9 @@ describe('BlobStorageService', () => {
 
   describe('uploadFileAndGetSasUrl', () => {
     it('정상적으로 파일 업로드 및 SAS URL 반환', async () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.statSync.mockReturnValue({ isFile: () => true, size: 100 });
-      fs.readFileSync.mockReturnValue(Buffer.from('test'));
+      fs.promises.access.mockResolvedValue(undefined);
+      fs.promises.stat.mockResolvedValue({ isFile: () => true, size: 100 });
+      fs.promises.readFile.mockResolvedValue(Buffer.from('test'));
 
       const sasUrl = await service.uploadFileAndGetSasUrl('/tmp/test.mp4', 'videos/test.mp4');
 
@@ -94,7 +96,7 @@ describe('BlobStorageService', () => {
     });
 
     it('파일이 없으면 에러 발생', async () => {
-      fs.existsSync.mockReturnValue(false);
+      fs.promises.access.mockRejectedValue(new Error('파일 없음'));
 
       await expect(service.uploadFileAndGetSasUrl('/tmp/notfound.mp4', 'videos/notfound.mp4')).rejects.toThrow(
         '파일이 존재하지 않습니다',
@@ -102,8 +104,8 @@ describe('BlobStorageService', () => {
     });
 
     it('파일이 비어있으면 에러 발생', async () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.statSync.mockReturnValue({ isFile: () => true, size: 0 });
+      fs.promises.access.mockResolvedValue(undefined);
+      fs.promises.stat.mockResolvedValue({ isFile: () => true, size: 0 });
 
       await expect(service.uploadFileAndGetSasUrl('/tmp/empty.mp4', 'videos/empty.mp4')).rejects.toThrow(
         '파일이 비어있습니다',
@@ -111,9 +113,9 @@ describe('BlobStorageService', () => {
     });
 
     it('Blob 업로드 중 에러 발생 시', async () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.statSync.mockReturnValue({ isFile: () => true, size: 100 });
-      fs.readFileSync.mockReturnValue(Buffer.from('test'));
+      fs.promises.access.mockResolvedValue(undefined);
+      fs.promises.stat.mockResolvedValue({ isFile: () => true, size: 100 });
+      fs.promises.readFile.mockResolvedValue(Buffer.from('test'));
       // Blob 클라이언트의 upload 메서드가 에러를 throw하도록 mock
       const mockUpload = jest.fn().mockRejectedValue(new Error('업로드 실패'));
       service['containerClient'].getBlockBlobClient = jest.fn().mockReturnValue({
@@ -126,9 +128,9 @@ describe('BlobStorageService', () => {
     });
 
     it('SAS URL 생성 중 에러 발생 시', async () => {
-      fs.existsSync.mockReturnValue(true);
-      fs.statSync.mockReturnValue({ isFile: () => true, size: 100 });
-      fs.readFileSync.mockReturnValue(Buffer.from('test'));
+      fs.promises.access.mockResolvedValue(undefined);
+      fs.promises.stat.mockResolvedValue({ isFile: () => true, size: 100 });
+      fs.promises.readFile.mockResolvedValue(Buffer.from('test'));
       // 정상 업로드 후 generateSasUrl에서 에러 발생하도록 mock
       const mockUpload = jest.fn().mockResolvedValue({ requestId: 'mock-request-id' });
       service['containerClient'].getBlockBlobClient = jest.fn().mockReturnValue({

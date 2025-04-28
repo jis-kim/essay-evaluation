@@ -52,12 +52,14 @@ export class BlobStorageService {
       let contentType = 'application/octet-stream';
 
       // 파일이 존재하는지 확인
-      if (!fs.existsSync(filePath)) {
+      try {
+        await fs.promises.access(filePath);
+      } catch {
         throw new Error(`파일이 존재하지 않습니다: ${filePath}`);
       }
 
       // 파일 상태 확인
-      const fileStats = fs.statSync(filePath);
+      const fileStats = await fs.promises.stat(filePath);
       if (!fileStats.isFile()) {
         throw new Error(`유효한 파일이 아닙니다: ${filePath}`);
       }
@@ -74,7 +76,7 @@ export class BlobStorageService {
         contentType = 'audio/mpeg';
       }
 
-      const fileData = fs.readFileSync(filePath);
+      const fileData = await fs.promises.readFile(filePath);
 
       // Blob 클라이언트 생성
       const blobClient = this.containerClient.getBlockBlobClient(blobName);
