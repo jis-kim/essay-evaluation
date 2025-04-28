@@ -57,6 +57,7 @@ export class SubmissionService {
         ...(mediaCreateInput.length > 0 && { media: { create: mediaCreateInput } }),
       });
     } catch (error) {
+      //this.logger.error(error);
       throw new InternalServerErrorException((error as Error).message);
     } finally {
       // 미디어 정보 삭제

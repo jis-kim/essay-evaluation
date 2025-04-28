@@ -18,6 +18,7 @@ import { AppConfigService } from '../config/config.service';
 export class BlobStorageService {
   private blobServiceClient!: BlobServiceClient;
   private containerClient!: ContainerClient;
+  private sharedKeyCredential!: StorageSharedKeyCredential;
 
   constructor(
     private readonly configService: AppConfigService,
@@ -26,10 +27,10 @@ export class BlobStorageService {
     try {
       const { accountName, accountKey, container } = this.configService.azureBlobConfig;
 
-      const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+      this.sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
       this.blobServiceClient = new BlobServiceClient(
         `https://${accountName}.blob.core.windows.net`,
-        sharedKeyCredential,
+        this.sharedKeyCredential,
       );
       this.containerClient = this.blobServiceClient.getContainerClient(container);
     } catch (error) {
@@ -107,9 +108,7 @@ export class BlobStorageService {
    */
   private generateSasUrl(blobClient: BlockBlobClient, expiryHours = 24): string {
     try {
-      const { accountName, accountKey, container } = this.configService.azureBlobConfig;
-
-      const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+      const { container } = this.configService.azureBlobConfig;
 
       // SAS 토큰 생성 옵션
       const sasOptions = {
@@ -120,8 +119,8 @@ export class BlobStorageService {
         expiresOn: new Date(new Date().valueOf() + expiryHours * 60 * 60 * 1000),
         protocol: SASProtocol.Https,
       };
-      // SAS 토큰 생성
-      const sasToken = generateBlobSASQueryParameters(sasOptions, sharedKeyCredential).toString();
+
+      const sasToken = generateBlobSASQueryParameters(sasOptions, this.sharedKeyCredential).toString();
 
       // SAS URL 생성
       const sasUrl = `${blobClient.url}?${sasToken}`;
