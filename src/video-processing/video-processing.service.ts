@@ -1,22 +1,58 @@
+import * as fs from 'fs';
 import * as path from 'path';
 
 import { Injectable, Logger } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
 
+import { MEDIA_DIR, MEDIA_SUFFIXES } from '../common/constants/media.constants';
+import { MediaType, SubmissionMediaInfo } from '../common/types/media.types';
+
 @Injectable()
 export class VideoProcessingService {
   constructor(private readonly logger: Logger) {}
 
-  async processVideo(videoPath: string): Promise<{
-    audioPath: string;
-    noAudioVideoPath: string;
-  }> {
+  async processVideo(videoPath: string): Promise<SubmissionMediaInfo[]> {
     // 비디오 처리 로직 구현
-    // 예: 비디오 프레임 추출, 오디오 추출, 텍스트 추출 등
     const leftRemovedVideoPath = await this.removeLeftSide(videoPath);
+    const { audioPath, noAudioVideoPath } = await this.separateAudioAndVideo(leftRemovedVideoPath);
 
-    // 오디오 추출 및 오디오 제거된 비디오 생성
-    return this.separateAudioAndVideo(leftRemovedVideoPath);
+    // flatten metadata 추출
+    const videoMeta = await this.flattenMetadata(noAudioVideoPath, 'VIDEO');
+    const audioMeta = await this.flattenMetadata(audioPath, 'AUDIO');
+    return [videoMeta, audioMeta];
+  }
+
+  /**
+   * 임시 저장된 비디오 삭제
+   * @param filename 비디오 파일명
+   */
+  async deleteMedia(filename: string): Promise<void> {
+    const dir = MEDIA_DIR;
+
+    try {
+      const files = await fs.promises.readdir(dir);
+      const baseFilename = path.parse(filename).name;
+      const targetFiles = files.filter((file) => file.startsWith(baseFilename));
+
+      if (targetFiles.length === 0) {
+        this.logger.warn(`삭제할 파일을 찾을 수 없습니다: ${baseFilename}`);
+        return;
+      }
+
+      targetFiles.forEach((file) => {
+        const fullPath = path.join(dir, file);
+        fs.promises.unlink(fullPath).catch((err) => {
+          if (err instanceof Error) {
+            this.logger.error(`파일 삭제 실패 ${fullPath}: ${err.message}`);
+          }
+        });
+      });
+    } catch (err) {
+      if (err instanceof Error) {
+        this.logger.error(`디렉토리 읽기 실패: ${err.message}`);
+        throw err;
+      }
+    }
   }
 
   /**
@@ -27,7 +63,7 @@ export class VideoProcessingService {
   private removeLeftSide(videoPath: string): Promise<string> {
     // 왼쪽 사이드 제거 로직 구현
     const { dir, name, ext } = path.parse(videoPath);
-    const outputPath = path.join(dir, `${name}_left_removed${ext}`);
+    const outputPath = path.join(dir, `${name}${MEDIA_SUFFIXES.left_removed}${ext}`);
 
     this.logger.log(`Removing left side of video: ${videoPath}`);
 
@@ -61,8 +97,8 @@ export class VideoProcessingService {
    */
   private async separateAudioAndVideo(videoPath: string): Promise<{ audioPath: string; noAudioVideoPath: string }> {
     const { dir, name } = path.parse(videoPath);
-    const audioPath = path.join(dir, `${name}_audio.mp3`);
-    const noAudioVideoPath = path.join(dir, `${name}_no_audio.mp4`);
+    const audioPath = path.join(dir, `${name}${MEDIA_SUFFIXES.audio}.mp3`);
+    const noAudioVideoPath = path.join(dir, `${name}${MEDIA_SUFFIXES.no_audio}.mp4`);
 
     this.logger.log(`Extracting audio from video: ${videoPath}`);
 
@@ -112,6 +148,28 @@ export class VideoProcessingService {
         })
         .on('error', (err: Error) => reject(new Error(`무음 비디오 생성 오류: ${err.message}`)))
         .run();
+    });
+  }
+
+  /**
+   * 비디오 또는 오디오 파일의 메타데이터를 반환
+   * @param filePath 비디오 또는 오디오 파일 경로
+   * @param type 비디오 또는 오디오
+   * @returns 비디오 또는 오디오 파일의 메타데이터
+   */
+  private flattenMetadata(filePath: string, type: MediaType): Promise<SubmissionMediaInfo> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) return reject(new Error((err as Error).message));
+        const format = metadata.format;
+        resolve({
+          type,
+          filename: path.basename(filePath),
+          path: filePath,
+          size: Number(format.size),
+          format: format.format_name || '',
+        });
+      });
     });
   }
 }

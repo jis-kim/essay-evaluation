@@ -15,6 +15,8 @@ import { ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nes
 import { diskStorage } from 'multer';
 import { ulid } from 'ulid';
 
+import { MEDIA_DIR } from '../common/constants/media.constants';
+
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { SubmissionService } from './submission.service';
@@ -55,7 +57,7 @@ export class SubmissionController {
   @UseInterceptors(
     FileInterceptor('videoFile', {
       storage: diskStorage({
-        destination: './uploads/temp',
+        destination: MEDIA_DIR,
         filename: (req, file, cb) => {
           const uniqueFilename = `${ulid()}${extname(file.originalname)}`;
           cb(null, uniqueFilename);
@@ -65,9 +67,9 @@ export class SubmissionController {
         fileSize: 1024 * 1024 * 50, // 50MB 제한
       },
       fileFilter: (req, file, cb) => {
-        // mp4 파일만 허용
-        if (file.mimetype !== 'video/mp4') {
-          return cb(new UnsupportedMediaTypeException('mp4 파일만 업로드 가능합니다.'), false);
+        // 비디오 파일만 허용
+        if (!file.mimetype.startsWith('video/')) {
+          return cb(new UnsupportedMediaTypeException('비디오 파일만 업로드 가능합니다.'), false);
         }
         cb(null, true);
       },
