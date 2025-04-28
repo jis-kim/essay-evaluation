@@ -1,4 +1,10 @@
-import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Submission } from '@prisma/client';
 
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
@@ -11,6 +17,8 @@ import { SubmissionResponseDto } from './dto/submission-response.dto';
 
 @Injectable()
 export class SubmissionService {
+  private readonly logger = new Logger(SubmissionService.name);
+
   constructor(
     private readonly studentRepository: StudentRepository,
     private readonly submissionRepository: SubmissionRepository,
@@ -57,8 +65,8 @@ export class SubmissionService {
         ...(mediaCreateInput.length > 0 && { media: { create: mediaCreateInput } }),
       });
     } catch (error) {
-      //this.logger.error(error);
-      throw new InternalServerErrorException((error as Error).message);
+      this.logger.error(error);
+      throw new InternalServerErrorException('비디오 처리');
     } finally {
       // 미디어 정보 삭제
       if (videoFile) {
