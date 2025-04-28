@@ -8,6 +8,7 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
+import { SubmissionMediaInfo } from '../common/types/media.types';
 
 describe('SubmissionService', () => {
   let service: SubmissionService;
@@ -58,10 +59,24 @@ describe('SubmissionService', () => {
     path: '/tmp/test-video.mp4',
   } as Express.Multer.File;
 
-  const mockProcessedVideo = {
-    audioPath: '/tmp/test-video_audio.mp3',
-    noAudioVideoPath: '/tmp/test-video_no_audio.mp4',
-  };
+  const mockProcessedMediaInfo: SubmissionMediaInfo[] = [
+    {
+      type: 'VIDEO',
+      filename: 'test-video_no_audio.mp4',
+      path: '/tmp/test-video_no_audio.mp4',
+      size: 123456,
+      format: 'mp4',
+    },
+    {
+      type: 'AUDIO',
+      filename: 'test-video_audio.mp3',
+      path: '/tmp/test-video_audio.mp3',
+      size: 654321,
+      format: 'mp3',
+    },
+  ];
+  const mockVideoUrl = 'https://mockstorage.com/test-video_no_audio.mp4';
+  const mockAudioUrl = 'https://mockstorage.com/test-video_audio.mp3';
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -90,6 +105,7 @@ describe('SubmissionService', () => {
           provide: VideoProcessingService,
           useValue: {
             processVideo: jest.fn(),
+            deleteMedia: jest.fn(),
           },
         },
         {
@@ -114,12 +130,20 @@ describe('SubmissionService', () => {
   });
 
   describe('createSubmission', () => {
-    it('성공적으로 제출을 생성해야 합니다', async () => {
+    it('성공적으로 submission을 생성해야 합니다', async () => {
       // Mock 설정
       jest.spyOn(studentRepository, 'findById').mockResolvedValue(mockStudent);
       jest.spyOn(submissionRepository, 'findByStudentAndComponent').mockResolvedValue(null);
       jest.spyOn(submissionRepository, 'create').mockResolvedValue(mockSubmission as Submission);
-      jest.spyOn(videoProcessingService, 'processVideo').mockResolvedValue(mockProcessedVideo);
+      jest.spyOn(videoProcessingService, 'processVideo').mockResolvedValue(mockProcessedMediaInfo);
+      const uploadSpy = jest
+        .spyOn(service['blobStorageService'], 'uploadFileAndGetSasUrl')
+        .mockImplementation((filePath: string, filename: string) => {
+          if (filename.endsWith('.mp4')) return Promise.resolve(mockVideoUrl);
+          if (filename.endsWith('.mp3')) return Promise.resolve(mockAudioUrl);
+          return Promise.resolve('unknown');
+        });
+      jest.spyOn(videoProcessingService, 'deleteMedia').mockResolvedValue();
 
       // 테스트 실행
       const result = await service.createSubmission({
@@ -134,16 +158,37 @@ describe('SubmissionService', () => {
         mockCreateSubmissionDto.componentType,
       );
       expect(videoProcessingService.processVideo).toHaveBeenCalledWith(mockVideoFile.path);
+      expect(uploadSpy).toHaveBeenCalledTimes(2);
       expect(submissionRepository.create).toHaveBeenCalledWith({
         student: { connect: { id: mockCreateSubmissionDto.studentId } },
         componentType: mockCreateSubmissionDto.componentType,
         submitText: mockCreateSubmissionDto.submitText,
+        media: {
+          create: [
+            {
+              type: 'VIDEO',
+              filename: 'test-video_no_audio.mp4',
+              url: mockVideoUrl,
+              size: 123456,
+              format: 'mp4',
+            },
+            {
+              type: 'AUDIO',
+              filename: 'test-video_audio.mp3',
+              url: mockAudioUrl,
+              size: 654321,
+              format: 'mp3',
+            },
+          ],
+        },
       });
 
       // 응답 검증
       expect(result).toBeInstanceOf(SubmissionResponseDto);
       expect(result.studentName).toBe(mockStudent.studentName);
       expect(result.score).toBe(mockSubmission.score);
+      expect(result.mediaUrl?.video).toBe(mockVideoUrl);
+      expect(result.mediaUrl?.audio).toBe(mockAudioUrl);
     });
 
     it('학생 정보가 일치하지 않으면 BadRequestException을 던져야 합니다', async () => {

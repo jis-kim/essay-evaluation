@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, InternalServerError
 import { Submission } from '@prisma/client';
 
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
+import { SubmissionMediaCreateInput } from '../common/types/media.types';
 import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 
@@ -13,7 +14,6 @@ export class SubmissionService {
   constructor(
     private readonly studentRepository: StudentRepository,
     private readonly submissionRepository: SubmissionRepository,
-    //private readonly submissionMediaRepository: SubmissionMediaRepository,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly blobStorageService: BlobStorageService,
     // private readonly aiService: AiService,
@@ -40,57 +40,28 @@ export class SubmissionService {
     if (existingSubmission) {
       throw new ConflictException('이미 제출한 과제입니다.');
     }
+    let submission: Submission;
+    let mediaCreateInput: SubmissionMediaCreateInput[] = [];
 
-    // 3. 비디오 업로드 프로세싱
-    let processedVideoInfo = null;
-    if (videoFile) {
-      try {
-        processedVideoInfo = await this.videoProcessingService.processVideo(videoFile.path);
-      } catch (error) {
-        // TODO: remove all saved files in this process
-        // HOWTO: videoFile.path* 파일 제거
-        throw new InternalServerErrorException((error as Error).message);
+    try {
+      // 2. 미디어 정보 생성 (비디오 처리 + 업로드)
+      if (videoFile) {
+        mediaCreateInput = await this.processAndUploadMedia(videoFile.path);
       }
-    }
 
-    // 4. create submission
-    const submission: Submission = await this.submissionRepository.create({
-      student: { connect: { id: studentId } },
-      componentType,
-      submitText,
-    });
-
-    // 5. 비디오/오디오 파일이 있으면 Azure Blob Storage에 업로드하고 SAS URL 생성
-    let videoUrl: string | undefined;
-    let audioUrl: string | undefined;
-
-    if (processedVideoInfo) {
-      try {
-        // 비디오 파일 업로드
-        const videoFileName = processedVideoInfo.noAudioVideoPath;
-        videoUrl = await this.blobStorageService.uploadFileAndGetSasUrl(
-          processedVideoInfo.noAudioVideoPath,
-          videoFileName,
-          'video/mp4',
-        );
-
-        // 오디오 파일 업로드
-        const audioFileName = `submission/${submission.id}/audio_${Date.now()}.mp3`;
-        audioUrl = await this.blobStorageService.uploadFileAndGetSasUrl(
-          processedVideoInfo.audioPath,
-          audioFileName,
-          'audio/mpeg',
-        );
-
-        //// 업로드된 URL을 DB에 저장
-        //await this.submissionMediaRepository.create({
-        //  submission: { connect: { id: submission.id } },
-        //  videoUrl,
-        //  audioUrl,
-        //});
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
-        throw new InternalServerErrorException(`Blob 저장 실패: ${errorMessage}`);
+      // 3. Submission 생성 (media가 있으면 중첩 create)
+      submission = await this.submissionRepository.create({
+        student: { connect: { id: studentId } },
+        componentType,
+        submitText,
+        ...(mediaCreateInput.length > 0 && { media: { create: mediaCreateInput } }),
+      });
+    } catch (error) {
+      throw new InternalServerErrorException((error as Error).message);
+    } finally {
+      // 미디어 정보 삭제
+      if (videoFile) {
+        void this.videoProcessingService.deleteMedia(videoFile.filename);
       }
     }
 
@@ -119,12 +90,29 @@ export class SubmissionService {
       submission,
       studentName,
       apiLatency,
-      videoUrl || audioUrl
+      mediaCreateInput.length > 0
         ? {
-            video: videoUrl,
-            audio: audioUrl,
+            video: mediaCreateInput.find((m) => m.type === 'VIDEO')?.url,
+            audio: mediaCreateInput.find((m) => m.type === 'AUDIO')?.url,
           }
         : undefined,
+    );
+  }
+
+  // 미디어 처리 + 업로드
+  private async processAndUploadMedia(videoPath: string): Promise<SubmissionMediaCreateInput[]> {
+    const processedMediaInfo = await this.videoProcessingService.processVideo(videoPath);
+    return await Promise.all(
+      processedMediaInfo.map(async (mediaInfo) => {
+        const url = await this.blobStorageService.uploadFileAndGetSasUrl(mediaInfo.path, mediaInfo.filename);
+        return {
+          type: mediaInfo.type,
+          filename: mediaInfo.filename,
+          url,
+          size: mediaInfo.size,
+          format: mediaInfo.format,
+        };
+      }),
     );
   }
 

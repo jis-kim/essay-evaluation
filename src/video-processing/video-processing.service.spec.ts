@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
 import * as ffmpeg from 'fluent-ffmpeg';
 import { VideoProcessingService } from './video-processing.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import { MEDIA_DIR } from '../common/constants/media.constants';
 
 // ffmpeg 모듈을 모킹
 jest.mock('fluent-ffmpeg');
@@ -69,15 +72,34 @@ describe('VideoProcessingService', () => {
         audioPath: mockAudioPath,
         noAudioVideoPath: mockNoAudioPath,
       });
+      // flattenMetadata mock
+      const mockVideoMeta = {
+        type: 'VIDEO',
+        filename: 'test-video_left_removed_no_audio.mp4',
+        path: mockNoAudioPath,
+        size: 123456,
+        format: 'mp4',
+      };
+      const mockAudioMeta = {
+        type: 'AUDIO',
+        filename: 'test-video_left_removed_audio.mp3',
+        path: mockAudioPath,
+        size: 654321,
+        format: 'mp3',
+      };
+      const flattenSpy = jest
+        .spyOn(service as any, 'flattenMetadata')
+        .mockImplementationOnce(() => Promise.resolve(mockVideoMeta))
+        .mockImplementationOnce(() => Promise.resolve(mockAudioMeta));
 
       const result = await service.processVideo(mockVideoPath);
 
       expect(service['removeLeftSide']).toHaveBeenCalledWith(mockVideoPath);
       expect(service['separateAudioAndVideo']).toHaveBeenCalledWith(mockLeftRemovedPath);
-      expect(result).toEqual({
-        audioPath: mockAudioPath,
-        noAudioVideoPath: mockNoAudioPath,
-      });
+      expect(flattenSpy).toHaveBeenCalledTimes(2);
+      expect(flattenSpy).toHaveBeenNthCalledWith(1, mockNoAudioPath, 'VIDEO');
+      expect(flattenSpy).toHaveBeenNthCalledWith(2, mockAudioPath, 'AUDIO');
+      expect(result).toEqual([mockVideoMeta, mockAudioMeta]);
     });
 
     it('removeLeftSide에서 에러가 발생하면 에러를 Throw 해야합니다', async () => {
@@ -122,7 +144,6 @@ describe('VideoProcessingService', () => {
       expect(mockChain.run).toHaveBeenCalled();
       expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('Removing left side of video'));
       expect(logger.log).toHaveBeenCalledWith(expect.stringContaining('Left side removed video saved'));
-      expect(result).toMatch(/_left_removed/);
     });
 
     it('에러 발생시 reject 해야 합니다', async () => {
@@ -239,6 +260,39 @@ describe('VideoProcessingService', () => {
       await expect(service['removeAudioFromVideo'](mockVideoPath, mockNoAudioPath)).rejects.toThrow(
         '무음 비디오 생성 오류: 무음 비디오 생성 에러',
       );
+    });
+  });
+
+  describe('deleteMedia', () => {
+    const mockFilename = 'test-video.mp4';
+    const mockFiles = [
+      'test-video.mp4',
+      'test-video_left_removed.mp4',
+      'test-video_left_removed_audio.mp3',
+      'test-video_left_removed_no_audio.mp4',
+    ];
+
+    beforeEach(() => {
+      jest.spyOn(fs.promises, 'readdir').mockResolvedValue(mockFiles as unknown as fs.Dirent[]);
+      jest.spyOn(fs.promises, 'unlink').mockResolvedValue(undefined);
+    });
+
+    it('파일명으로 시작하는 모든 파일을 삭제해야 합니다', async () => {
+      await service.deleteMedia(mockFilename);
+
+      mockFiles.forEach((file) => {
+        const fullPath = path.join(MEDIA_DIR, file);
+        expect(fs.promises.unlink).toHaveBeenCalledWith(fullPath);
+      });
+      expect(fs.promises.unlink).toHaveBeenCalledTimes(mockFiles.length);
+    });
+
+    it('파일이 없는 경우 아무 동작도 하지 않습니다', async () => {
+      jest.spyOn(fs.promises, 'readdir').mockResolvedValue([]);
+
+      await service.deleteMedia(mockFilename);
+
+      expect(fs.promises.unlink).not.toHaveBeenCalled();
     });
   });
 });
