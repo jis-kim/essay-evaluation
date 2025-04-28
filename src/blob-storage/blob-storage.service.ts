@@ -32,7 +32,6 @@ export class BlobStorageService {
         sharedKeyCredential,
       );
       this.containerClient = this.blobServiceClient.getContainerClient(container);
-      this.logger.log(sharedKeyCredential);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       this.logger.error(`Azure Blob Storage 연결 실패: ${errorMessage}`);
