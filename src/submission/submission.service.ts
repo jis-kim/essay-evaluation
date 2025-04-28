@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { Submission } from '@prisma/client';
 
+import { BlobStorageService } from '../blob-storage/blob-storage.service';
 import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 
@@ -12,8 +13,9 @@ export class SubmissionService {
   constructor(
     private readonly studentRepository: StudentRepository,
     private readonly submissionRepository: SubmissionRepository,
+    //private readonly submissionMediaRepository: SubmissionMediaRepository,
     private readonly videoProcessingService: VideoProcessingService,
-    // private readonly blobService: BlobService,
+    private readonly blobStorageService: BlobStorageService,
     // private readonly aiService: AiService,
   ) {}
 
@@ -39,9 +41,6 @@ export class SubmissionService {
       throw new ConflictException('이미 제출한 과제입니다.');
     }
 
-    // 3-6. 비디오 업로드부터 AI 호출까지 서비스 구현 필요
-    // 현재는 서비스가 없으므로 주석 처리하고 더미 데이터 사용
-
     // 3. 비디오 업로드 프로세싱
     let processedVideoInfo = null;
     if (videoFile) {
@@ -54,29 +53,48 @@ export class SubmissionService {
       }
     }
 
-    // 4. blob 저장 - 나중에 구현
-    /*
-    try {
-      blobId = await this.blobService.save(processedVideoInfo);
-    } catch {
-      throw new BadRequestException('blob 저장 실패');
-    }
-    */
-
-    // 5. create submission
+    // 4. create submission
     const submission: Submission = await this.submissionRepository.create({
       student: { connect: { id: studentId } },
       componentType,
       submitText,
     });
 
-    //6. save to submission_media(DB)
-    /*await this.submissionMediaRepository.create({
-      submission: { connect: { id: submission.id } },
-      videoUrl: videoUrl,
-    });*/
+    // 5. 비디오/오디오 파일이 있으면 Azure Blob Storage에 업로드하고 SAS URL 생성
+    let videoUrl: string | undefined;
+    let audioUrl: string | undefined;
 
-    // 7. ai 부르기 - 나중에 실제 AI 서비스 호출로 대체
+    if (processedVideoInfo) {
+      try {
+        // 비디오 파일 업로드
+        const videoFileName = processedVideoInfo.noAudioVideoPath;
+        videoUrl = await this.blobStorageService.uploadFileAndGetSasUrl(
+          processedVideoInfo.noAudioVideoPath,
+          videoFileName,
+          'video/mp4',
+        );
+
+        // 오디오 파일 업로드
+        const audioFileName = `submission/${submission.id}/audio_${Date.now()}.mp3`;
+        audioUrl = await this.blobStorageService.uploadFileAndGetSasUrl(
+          processedVideoInfo.audioPath,
+          audioFileName,
+          'audio/mpeg',
+        );
+
+        //// 업로드된 URL을 DB에 저장
+        //await this.submissionMediaRepository.create({
+        //  submission: { connect: { id: submission.id } },
+        //  videoUrl,
+        //  audioUrl,
+        //});
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
+        throw new InternalServerErrorException(`Blob 저장 실패: ${errorMessage}`);
+      }
+    }
+
+    // 6. ai 부르기 - 나중에 실제 AI 서비스 호출로 대체
     //const aiResult: AiResult = {
     //  score: 8, // 0 ~ 10
     //  feedback: 'Good essay.',
@@ -93,9 +111,6 @@ export class SubmissionService {
     // 하이라이트가 포함된 텍스트 생성 (예시)
     //const highlightSubmitText = this.generateHighlightText(submitText, aiResult.highlights || []);
 
-    // 8. 제출 정보 DB 저장 - Prisma 스키마에 맞게 필드 조정
-    // 9. submission log 저장
-
     // FIXME: API 지연시간 계산
     const apiLatency = Date.now() - startTime;
 
@@ -104,12 +119,12 @@ export class SubmissionService {
       submission,
       studentName,
       apiLatency,
-      processedVideoInfo
+      videoUrl || audioUrl
         ? {
-            video: processedVideoInfo.noAudioVideoPath,
-            audio: processedVideoInfo.audioPath,
+            video: videoUrl,
+            audio: audioUrl,
           }
-        : undefined, // 실제 구현 시 DB에서 가져오거나 서비스에서 반환된 값 사용
+        : undefined,
     );
   }
 

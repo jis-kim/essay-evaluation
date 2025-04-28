@@ -7,6 +7,7 @@ import { SubmissionService } from './submission.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
+import { BlobStorageService } from '../blob-storage/blob-storage.service';
 
 describe('SubmissionService', () => {
   let service: SubmissionService;
@@ -77,6 +78,12 @@ describe('SubmissionService', () => {
           useValue: {
             findByStudentAndComponent: jest.fn(),
             create: jest.fn(),
+          },
+        },
+        {
+          provide: BlobStorageService,
+          useValue: {
+            uploadFileAndGetSasUrl: jest.fn(),
           },
         },
         {
