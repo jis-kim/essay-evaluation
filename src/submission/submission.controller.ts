@@ -11,11 +11,13 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBody, ApiConsumes, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { diskStorage } from 'multer';
 import { ulid } from 'ulid';
 
 import { MEDIA_DIR } from '../common/constants/media.constants';
+import { ApiCommonResponse } from '../common/decorators/api-response.decorator';
+import { CommonResponseDto, SuccessResponse } from '../common/dto/common-response.dto';
 
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { SubmissionResponseDto } from './dto/submission-response.dto';
@@ -49,10 +51,7 @@ export class SubmissionController {
       required: ['studentId', 'studentName', 'componentType', 'submitText'],
     },
   })
-  @ApiOkResponse({
-    type: SubmissionResponseDto,
-    description: '요청 처리 완료 (성공 응답 예시)',
-  })
+  @ApiCommonResponse(SubmissionResponseDto) // 여기서 커스텀 데코레이터 사용
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('videoFile', {
@@ -79,7 +78,8 @@ export class SubmissionController {
   async createSubmission(
     @Body() createSubmissionDto: CreateSubmissionDto,
     @UploadedFile() videoFile?: Express.Multer.File,
-  ): Promise<SubmissionResponseDto> {
-    return this.submissionService.createSubmission({ createSubmissionDto, videoFile });
+  ): Promise<SuccessResponse<SubmissionResponseDto>> {
+    const result = await this.submissionService.createSubmission({ createSubmissionDto, videoFile });
+    return CommonResponseDto.success(result);
   }
 }
