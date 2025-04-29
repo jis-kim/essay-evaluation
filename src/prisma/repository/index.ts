@@ -2,3 +2,4 @@
 
 export * from './student.repository';
 export * from './submission.repository';
+export * from './revision.repository';

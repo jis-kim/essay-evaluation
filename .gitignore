@@ -144,3 +144,5 @@ testblob.js
 .cursor
 
 uploads/
+
+test/fixtures/*.mp4

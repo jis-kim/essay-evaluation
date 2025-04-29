@@ -11,16 +11,16 @@ export class SubmissionRepository {
     return this.prisma.submission.create({ data });
   }
 
-  async findById(id: string): Promise<Submission | null> {
-    return this.prisma.submission.findUnique({ where: { id } });
+  async findById(parameters: Prisma.SubmissionFindUniqueArgs): Promise<Submission | null> {
+    return this.prisma.submission.findUnique(parameters);
   }
 
-  async findAll(): Promise<Submission[]> {
-    return this.prisma.submission.findMany();
+  async findAll(parameters: Prisma.SubmissionFindManyArgs): Promise<Submission[]> {
+    return this.prisma.submission.findMany(parameters);
   }
 
-  async update(id: string, data: Prisma.SubmissionUpdateInput): Promise<Submission> {
-    return this.prisma.submission.update({ where: { id }, data });
+  async update(parameters: Prisma.SubmissionUpdateArgs): Promise<Submission> {
+    return this.prisma.submission.update(parameters);
   }
 
   // 학생 ID와 컴포넌트 타입으로 제출 정보 찾기

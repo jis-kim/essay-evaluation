@@ -17,6 +17,7 @@ describe('SubmissionService', () => {
   let submissionRepository: SubmissionRepository;
   let videoProcessingService: VideoProcessingService;
   let evaluationService: EvaluationService;
+  let logger: Logger;
 
   const mockStudent = {
     id: 1,
@@ -122,6 +123,8 @@ describe('SubmissionService', () => {
             log: jest.fn(),
             error: jest.fn(),
             warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
           },
         },
       ],
@@ -132,6 +135,7 @@ describe('SubmissionService', () => {
     submissionRepository = module.get<SubmissionRepository>(SubmissionRepository);
     videoProcessingService = module.get<VideoProcessingService>(VideoProcessingService);
     evaluationService = module.get<EvaluationService>(EvaluationService);
+    logger = module.get<Logger>(Logger);
   });
 
   it('should be defined', () => {

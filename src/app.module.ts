@@ -5,11 +5,12 @@ import { AppService } from './app.service';
 import { BlobStorageModule } from './blob-storage/blob-storage.module';
 import { AppConfigModule } from './config/config.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { RevisionModule } from './revision/revision.module';
 import { SubmissionModule } from './submission/submission.module';
 import { VideoProcessingModule } from './video-processing/video-processing.module';
 
 @Module({
-  imports: [AppConfigModule, PrismaModule, SubmissionModule, VideoProcessingModule, BlobStorageModule],
+  imports: [AppConfigModule, PrismaModule, SubmissionModule, VideoProcessingModule, BlobStorageModule, RevisionModule],
   controllers: [AppController],
   providers: [
     AppService,

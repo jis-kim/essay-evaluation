@@ -75,11 +75,12 @@ model SubmissionLog {
 
 // 재평가 이력
 model Revision {
-  id           String     @id @default(uuid()) @db.Uuid
-  submissionId String     @map("submission_id") @db.Uuid
-  submission   Submission @relation(fields: [submissionId], references: [id])
-  createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id           String           @id @default(uuid()) @db.Uuid
+  submissionId String           @map("submission_id") @db.Uuid
+  submission   Submission       @relation(fields: [submissionId], references: [id])
+  status       SubmissionStatus @default(PENDING)
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("revisions")
 }
@@ -131,13 +132,6 @@ model MonthlyStats {
 }
 
 enum SubmissionStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-}
-
-enum RevisionStatus {
   PENDING
   PROCESSING
   COMPLETED
