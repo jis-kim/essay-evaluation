@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { join } from 'path';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { MediaType } from '@prisma/client';
@@ -28,7 +29,8 @@ export class VideoProcessingService {
    * @param filename 비디오 파일명
    */
   async deleteMedia(filename: string): Promise<void> {
-    const dir = MEDIA_DIR;
+    const dir = join(__dirname, '..', '..', MEDIA_DIR);
+    console.log(dir);
 
     try {
       const files = await fs.promises.readdir(dir);
@@ -51,8 +53,8 @@ export class VideoProcessingService {
     } catch (err) {
       if (err instanceof Error) {
         this.logger.error(`디렉토리 읽기 실패: ${err.message}`);
-        throw err;
       }
+      throw err;
     }
   }
 

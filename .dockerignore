@@ -1,0 +1,10 @@
+.env
+node_modules
+logs
+uploads
+test
+.DS_Store
+dist
+.cursor
+eslint.config.mjs
+lefthook.yml

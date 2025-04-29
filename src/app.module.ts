@@ -1,23 +1,16 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { BlobStorageModule } from './blob-storage/blob-storage.module';
 import { AppConfigModule } from './config/config.module';
+import { LoggerModule } from './logger/logger.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RevisionModule } from './revision/revision.module';
 import { SubmissionModule } from './submission/submission.module';
-import { VideoProcessingModule } from './video-processing/video-processing.module';
 
 @Module({
-  imports: [AppConfigModule, PrismaModule, SubmissionModule, VideoProcessingModule, BlobStorageModule, RevisionModule],
+  imports: [AppConfigModule, PrismaModule, SubmissionModule, RevisionModule, LoggerModule],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: Logger,
-      useValue: new Logger(),
-    },
-  ],
+  providers: [AppService],
 })
 export class AppModule {}

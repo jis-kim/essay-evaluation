@@ -10,6 +10,7 @@ import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
 import { SubmissionMediaInfo } from '../common/types/media.types';
 import { EvaluationService } from '../evaluation/evaluation.service';
+import { CustomLogger } from '../logger/custom-logger.service';
 
 describe('SubmissionService', () => {
   let service: SubmissionService;
@@ -17,7 +18,7 @@ describe('SubmissionService', () => {
   let submissionRepository: SubmissionRepository;
   let videoProcessingService: VideoProcessingService;
   let evaluationService: EvaluationService;
-  let logger: Logger;
+  let logger: CustomLogger;
 
   const mockStudent = {
     id: 1,
@@ -118,7 +119,7 @@ describe('SubmissionService', () => {
           },
         },
         {
-          provide: Logger,
+          provide: CustomLogger,
           useValue: {
             log: jest.fn(),
             error: jest.fn(),
@@ -135,7 +136,7 @@ describe('SubmissionService', () => {
     submissionRepository = module.get<SubmissionRepository>(SubmissionRepository);
     videoProcessingService = module.get<VideoProcessingService>(VideoProcessingService);
     evaluationService = module.get<EvaluationService>(EvaluationService);
-    logger = module.get<Logger>(Logger);
+    logger = module.get<CustomLogger>(CustomLogger);
   });
 
   it('should be defined', () => {

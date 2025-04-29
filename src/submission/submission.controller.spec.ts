@@ -49,6 +49,8 @@ describe('SubmissionController', () => {
   } as Express.Multer.File;
 
   const mockSubmissionResponse = {
+    result: 'ok',
+    message: null,
     studentId: 1,
     studentName: '김땡삼',
     submitText: '테스트 에세이 내용',
@@ -94,7 +96,7 @@ describe('SubmissionController', () => {
         videoFile: mockVideoFile,
         createSubmissionDto: mockCreateSubmissionDto,
       });
-      expect(result).toEqual(mockSubmissionResponse);
+      expect(result).toStrictEqual(mockSubmissionResponse);
     });
   });
 });

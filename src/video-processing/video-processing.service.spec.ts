@@ -288,7 +288,7 @@ describe('VideoProcessingService', () => {
       await service.deleteMedia(mockFilename);
 
       mockFiles.forEach((file) => {
-        const fullPath = path.join(MEDIA_DIR, file);
+        const fullPath = path.join(__dirname, '..', '..', MEDIA_DIR, file);
         expect(fs.promises.unlink).toHaveBeenCalledWith(fullPath);
       });
       expect(fs.promises.unlink).toHaveBeenCalledTimes(mockFiles.length);
