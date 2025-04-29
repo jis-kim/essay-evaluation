@@ -9,7 +9,7 @@ cp .env.example .env
 ```
 
 - .env 파일 내용 설정
-```
+```bash
 NODE_ENV=production
 PORT=3000
 
@@ -49,28 +49,32 @@ docker compose up --build -d
 
 - 이 단계에서 5개의 students 정보가 시딩됩니다.
 - 시딩된 학생 정보는 아래와 같습니다. 참고하여 테스트 진행 할 수 있습니다.
-    ```json
+```json
+{
+  "students": [
     {
-      id: 1,
-      studentName: '김민준',
+      "id": 1,
+      "studentName": "김민준"
     },
     {
-      id: 2,
-      studentName: '이서연',
+      "id": 2,
+      "studentName": "이서연"
     },
     {
-      id: 3,
-      studentName: '박지우',
+      "id": 3,
+      "studentName": "박지우"
     },
     {
-      id: 4,
-      studentName: '최현우',
+      "id": 4,
+      "studentName": "최현우"
     },
     {
-      id: 5,
-      studentName: '정수아',
-    },
-    ```
+      "id": 5,
+      "studentName": "정수아"
+    }
+  ]
+}
+```
 
 
 ### 3. swagger 주소
@@ -202,8 +206,6 @@ erDiagram
 
 
 ```mermaid
-
-flowchart TD
 sequenceDiagram
     participant User
     participant SubmissionController
@@ -218,22 +220,23 @@ sequenceDiagram
     SubmissionController->>SubmissionService: createSubmission(videoPath)
     SubmissionService->>VideoProcessingService: processVideo(videoPath)
     VideoProcessingService-->>SubmissionService: [미디어 메타데이터 배열]
+
     loop 각 미디어 파일
         SubmissionService->>BlobStorageService: uploadFileAndGetSasUrl(media.path, media.filename)
         BlobStorageService-->>SubmissionService: SAS URL
     end
+
     SubmissionService->>PrismaDB: 제출 및 미디어 정보 저장
     SubmissionService->>VideoProcessingService: deleteMedia(filename)
-    SubmissionService-->>SubmissionController: 제출 결과(미디어 URL 포함)
-    SubmissionController-->>User: 제출 결과 응답
+
     SubmissionService->>EvaluationService: evaluate(submission)
     EvaluationService->>AiService: AI 평가 요청
     AiService-->>EvaluationService: AI 평가 결과
     EvaluationService-->>SubmissionService: 평가 결과(score, feedback, highlights)
     SubmissionService->>PrismaDB: 제출물 평가 결과 갱신
-    SubmissionService-->>SubmissionController: 최종 결과 응답
-    SubmissionController-->>User: 최종 결과 응답
 
+    SubmissionService-->>SubmissionController: 제출 결과(미디어 URL 포함)
+    SubmissionController-->>User: 제출 결과 응답
 ```
 
 ### 2. 재평가 (POST /v1/revision)
@@ -242,22 +245,17 @@ sequenceDiagram
     participant Client
     participant RevisionController
     participant RevisionService
-    participant SubmissionRepository
-    participant RevisionRepository
+    participant PrismaDB
     participant EvaluationService
 
     Client->>RevisionController: POST /revision { submissionId }
     RevisionController->>RevisionService: createRevision(submissionId)
-    RevisionService->>SubmissionRepository: findById({ where: { id: submissionId } })
-    RevisionService->>RevisionRepository: create({ data: { submissionId, status: PENDING } })
+    RevisionService->>PrismaDB: create({ data: { submissionId, status: PENDING } })
     RevisionService->>EvaluationService: evaluate(submission, revisionId)
     EvaluationService-->>RevisionService: (평가 결과)
-    RevisionService->>RevisionRepository: update({ where: { id: revisionId }, data: { status: COMPLETED } })
-    RevisionService->>SubmissionRepository: findById({ where: { id: submissionId }, include: { student, media } })
+    RevisionService->>PrismaDB: update({ where: { id: revisionId }, data: { status: COMPLETED } })
     RevisionService-->>RevisionController: SubmissionResponseDto 반환
     RevisionController-->>Client: SubmissionResponseDto
-    end
-
 ```
 
 
