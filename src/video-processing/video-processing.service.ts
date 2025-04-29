@@ -2,10 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { Injectable, Logger } from '@nestjs/common';
+import { MediaType } from '@prisma/client';
 import * as ffmpeg from 'fluent-ffmpeg';
 
 import { MEDIA_DIR, MEDIA_SUFFIXES } from '../common/constants/media.constants';
-import { MediaType, SubmissionMediaInfo } from '../common/types/media.types';
+import { SubmissionMediaInfo } from '../common/types/media.types';
 
 @Injectable()
 export class VideoProcessingService {
@@ -17,8 +18,8 @@ export class VideoProcessingService {
     const { audioPath, noAudioVideoPath } = await this.separateAudioAndVideo(leftRemovedVideoPath);
 
     // flatten metadata 추출
-    const videoMeta = await this.flattenMetadata(noAudioVideoPath, 'VIDEO');
-    const audioMeta = await this.flattenMetadata(audioPath, 'AUDIO');
+    const videoMeta = await this.flattenMetadata(noAudioVideoPath, MediaType.VIDEO);
+    const audioMeta = await this.flattenMetadata(audioPath, MediaType.AUDIO);
     return [videoMeta, audioMeta];
   }
 

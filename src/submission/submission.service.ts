@@ -5,10 +5,11 @@ import {
   InternalServerErrorException,
   Logger,
 } from '@nestjs/common';
-import { Submission } from '@prisma/client';
+import { MediaType, Submission } from '@prisma/client';
 
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
 import { SubmissionMediaCreateInput } from '../common/types/media.types';
+import { EvaluationService } from '../evaluation/evaluation.service';
 import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 
@@ -24,7 +25,7 @@ export class SubmissionService {
     private readonly submissionRepository: SubmissionRepository,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly blobStorageService: BlobStorageService,
-    // private readonly aiService: AiService,
+    private readonly evaluationService: EvaluationService,
   ) {}
 
   async createSubmission({
@@ -34,7 +35,7 @@ export class SubmissionService {
     createSubmissionDto: CreateSubmissionDto;
     videoFile?: Express.Multer.File;
   }): Promise<SubmissionResponseDto> {
-    const startTime = Date.now(); // FIXME: API 지연시간 측정 시작
+    const startTime = Date.now();
     const { studentId, studentName, componentType, submitText } = createSubmissionDto;
 
     // 1. 학생 조회
@@ -48,6 +49,7 @@ export class SubmissionService {
     if (existingSubmission) {
       throw new ConflictException('이미 제출한 과제입니다.');
     }
+
     let submission: Submission;
     let mediaCreateInput: SubmissionMediaCreateInput[] = [];
 
@@ -64,32 +66,21 @@ export class SubmissionService {
         submitText,
         ...(mediaCreateInput.length > 0 && { media: { create: mediaCreateInput } }),
       });
+
+      // 4. AI 평가 요청
+      submission = await this.evaluationService.evaluate({
+        submissionId: submission.id,
+        content: submitText,
+      });
     } catch (error) {
       this.logger.error(error);
-      throw new InternalServerErrorException('비디오 처리');
+      throw new InternalServerErrorException('제출 처리 중 오류가 발생했습니다.');
     } finally {
       // 미디어 정보 삭제
       if (videoFile) {
         void this.videoProcessingService.deleteMedia(videoFile.filename);
       }
     }
-
-    // 6. ai 부르기 - 나중에 실제 AI 서비스 호출로 대체
-    //const aiResult: AiResult = {
-    //  score: 8, // 0 ~ 10
-    //  feedback: 'Good essay.',
-    //  highlights: ['Good expression', 'Grammar issues'],
-    //};
-    /*
-    try {
-      aiResult = await this.aiService.evaluate(blobId);
-    } catch {
-      throw new BadRequestException('AI 평가 실패');
-    }
-    */
-
-    // 하이라이트가 포함된 텍스트 생성 (예시)
-    //const highlightSubmitText = this.generateHighlightText(submitText, aiResult.highlights || []);
 
     // FIXME: API 지연시간 계산
     const apiLatency = Date.now() - startTime;
@@ -101,8 +92,8 @@ export class SubmissionService {
       apiLatency,
       mediaCreateInput.length > 0
         ? {
-            video: mediaCreateInput.find((m) => m.type === 'VIDEO')?.url,
-            audio: mediaCreateInput.find((m) => m.type === 'AUDIO')?.url,
+            video: mediaCreateInput.find((m) => m.type === MediaType.VIDEO)?.url,
+            audio: mediaCreateInput.find((m) => m.type === MediaType.AUDIO)?.url,
           }
         : undefined,
     );
@@ -123,19 +114,5 @@ export class SubmissionService {
         };
       }),
     );
-  }
-
-  // 하이라이트 텍스트 생성 (간단한 구현 예시)
-  private generateHighlightText(text: string, highlights: string[]): string {
-    let result = text;
-
-    // 각 하이라이트를 볼드체로 변환 (간단한 구현)
-    highlights.forEach((highlight) => {
-      if (result.includes(highlight)) {
-        result = result.replace(highlight, `<b>${highlight}</b>`);
-      }
-    });
-
-    return result;
   }
 }
