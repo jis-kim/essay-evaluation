@@ -2,7 +2,7 @@
 CREATE TYPE "SubmissionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "RevisionStatus" AS ENUM ('PENDING', 'PROCESSING', 'COMPLETED', 'FAILED');
+CREATE TYPE "MediaType" AS ENUM ('VIDEO', 'AUDIO');
 
 -- CreateTable
 CREATE TABLE "students" (
@@ -23,7 +23,7 @@ CREATE TABLE "submissions" (
     "highlight_submit_text" TEXT,
     "result" JSONB,
     "score" INTEGER,
-    "feedback" VARCHAR(255),
+    "feedback" TEXT,
     "highlights" TEXT[],
     "status" "SubmissionStatus" NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -36,8 +36,11 @@ CREATE TABLE "submissions" (
 CREATE TABLE "submission_media" (
     "id" UUID NOT NULL,
     "submission_id" UUID NOT NULL,
-    "video_url" VARCHAR(512),
-    "audio_url" VARCHAR(512),
+    "url" VARCHAR(512) NOT NULL,
+    "type" "MediaType" NOT NULL,
+    "filename" VARCHAR(255) NOT NULL,
+    "size" INTEGER NOT NULL,
+    "format" VARCHAR(32) NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -49,6 +52,7 @@ CREATE TABLE "submission_logs" (
     "id" UUID NOT NULL,
     "submission_id" UUID NOT NULL,
     "revision_id" UUID,
+    "result" JSONB,
     "latency" INTEGER NOT NULL,
     "trace_id" VARCHAR(100) NOT NULL,
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -60,13 +64,7 @@ CREATE TABLE "submission_logs" (
 CREATE TABLE "revisions" (
     "id" UUID NOT NULL,
     "submission_id" UUID NOT NULL,
-    "submit_text" TEXT NOT NULL,
-    "highlight_submit_text" TEXT,
-    "result" JSONB,
-    "score" INTEGER,
-    "feedback" VARCHAR(255),
-    "highlights" TEXT[],
-    "status" "RevisionStatus" NOT NULL DEFAULT 'PENDING',
+    "status" "SubmissionStatus" NOT NULL DEFAULT 'PENDING',
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
 
@@ -119,7 +117,7 @@ CREATE INDEX "submissions_student_id_idx" ON "submissions"("student_id");
 CREATE UNIQUE INDEX "submissions_student_id_component_type_key" ON "submissions"("student_id", "component_type");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "submission_media_submission_id_key" ON "submission_media"("submission_id");
+CREATE INDEX "submission_media_submission_id_idx" ON "submission_media"("submission_id");
 
 -- CreateIndex
 CREATE INDEX "stats_daily_date_idx" ON "stats_daily"("date");
