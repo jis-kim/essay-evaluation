@@ -28,7 +28,7 @@ model Submission {
   highlightSubmitText String?           @map("highlight_submit_text") @db.Text
   result              Json?             @db.JsonB
   score               Int?              @db.Integer
-  feedback            String?           @db.VarChar(255)
+  feedback            String?           @db.Text
   highlights          String[]          @db.Text
   status              SubmissionStatus  @default(PENDING)
   createdAt           DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -60,7 +60,6 @@ model SubmissionMedia {
 }
 
 // 평가,재평가 호출 로그. latency, traceId
-// TODO: jsonb 저장(원본)
 model SubmissionLog {
   id           String     @id @default(uuid()) @db.Uuid
   submissionId String     @map("submission_id") @db.Uuid
