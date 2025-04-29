@@ -7,7 +7,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 # for prisma
-RUN apt-get update -y && apt-get install -y openssl
+RUN apt-get update -y && apt-get install -y openssl && apt-get install -y ffmpeg
 
 FROM base AS build
 COPY . .
@@ -19,6 +19,7 @@ RUN mkdir -p /app/logs /app/uploads/temp
 FROM base
 COPY --from=build /app/node_modules /app/node_modules
 COPY --from=build /app/dist /app/dist
+COPY --from=build /app/package.json /app/package.json
 COPY --from=build --chown=node:node /app/logs /app/logs
 COPY --from=build --chown=node:node /app/uploads/temp /app/uploads/temp
 COPY --from=build --chown=node:node /app/prisma /app/prisma
