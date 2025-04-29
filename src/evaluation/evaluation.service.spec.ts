@@ -137,18 +137,32 @@ describe('EvaluationService', () => {
       expect(result).toBe(text);
     });
 
-    it('하이라이트가 중복되는 경우도 한 번만 처리', () => {
-      const text = 'repeat repeat repeat';
-      const highlights = ['repeat'];
-      const result = (service as any).generateHighlightText(text, highlights);
-      expect(result).toBe('<b>repeat</b> repeat repeat');
-    });
-
     it('하이라이트가 텍스트에 없는 경우', () => {
       const text = 'no highlight here';
       const highlights = ['notfound'];
       const result = (service as any).generateHighlightText(text, highlights);
       expect(result).toBe(text);
+    });
+
+    it('겹치는 하이라이트가 있을 때 가장 앞에 오는 것만 감싸야 한다', () => {
+      const text = 'abcdefg';
+      const highlights = ['abc', 'bc', 'cde'];
+      const result = (service as any).generateHighlightText(text, highlights);
+      expect(result).toBe('<b>abc</b>defg');
+    });
+
+    it('HTML 특수문자가 포함된 하이라이트가 올바르게 이스케이프되어야 한다', () => {
+      const text = 'a <b> & b';
+      const highlights = ['<b>'];
+      const result = (service as any).generateHighlightText(text, highlights);
+      expect(result).toBe('a <b>&lt;b&gt;</b> &amp; b');
+    });
+
+    it('여러 번 등장하는 하이라이트를 모두 포함해야 한다', () => {
+      const text = 'foo bar foo bar';
+      const highlights = ['foo'];
+      const result = (service as any).generateHighlightText(text, highlights);
+      expect(result).toBe('<b>foo</b> bar <b>foo</b> bar');
     });
   });
 });

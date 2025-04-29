@@ -65,21 +65,64 @@ export class EvaluationService {
   }
 
   /**
-   * 하이라이트 텍스트 생성
+   * HTML 특수 문자를 이스케이프 처리
+   * @param text 이스케이프할 텍스트
+   * @returns 이스케이프된 텍스트
+   */
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * 하이라이트 텍스트 생성 (중복/겹침 안전)
    * @param text 원본 텍스트
    * @param highlights 하이라이트 문장 배열
    * @returns 하이라이트된 텍스트
    */
   private generateHighlightText(text: string, highlights: string[]): string {
-    let result = text;
+    if (!highlights.length) return this.escapeHtml(text); // no highlights
 
-    // 각 하이라이트를 볼드체로 변환 (간단한 구현)
+    // 하이라이트 위치 정보 수집
+    const segments: { start: number; end: number; text: string }[] = [];
     highlights.forEach((highlight) => {
-      if (result.includes(highlight)) {
-        result = result.replace(highlight, `<b>${highlight}</b>`);
+      let startIndex = 0;
+      while ((startIndex = text.indexOf(highlight, startIndex)) !== -1) {
+        segments.push({
+          start: startIndex,
+          end: startIndex + highlight.length,
+          text: highlight,
+        });
+        startIndex += 1;
       }
     });
 
+    // 시작 위치 기준 정렬
+    segments.sort((a, b) => a.start - b.start || b.end - a.end);
+
+    // 겹치는 구간 병합: 이미 감싼 구간과 겹치면 건너뜀 (중복방지)
+    const merged: { start: number; end: number; text: string }[] = [];
+    let lastEnd = 0;
+    for (const seg of segments) {
+      if (seg.start >= lastEnd) {
+        merged.push(seg);
+        lastEnd = seg.end;
+      }
+    }
+
+    // 결과 문자열 조립
+    let result = '';
+    let lastIndex = 0;
+    for (const seg of merged) {
+      result += this.escapeHtml(text.substring(lastIndex, seg.start));
+      result += `<b>${this.escapeHtml(seg.text)}</b>`;
+      lastIndex = seg.end;
+    }
+    result += this.escapeHtml(text.substring(lastIndex));
     return result;
   }
 }
