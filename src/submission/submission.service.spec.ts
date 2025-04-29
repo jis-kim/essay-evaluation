@@ -9,12 +9,14 @@ import { VideoProcessingService } from '../video-processing/video-processing.ser
 import { SubmissionResponseDto } from './dto/submission-response.dto';
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
 import { SubmissionMediaInfo } from '../common/types/media.types';
+import { EvaluationService } from '../evaluation/evaluation.service';
 
 describe('SubmissionService', () => {
   let service: SubmissionService;
   let studentRepository: StudentRepository;
   let submissionRepository: SubmissionRepository;
   let videoProcessingService: VideoProcessingService;
+  let evaluationService: EvaluationService;
 
   const mockStudent = {
     id: 1,
@@ -109,6 +111,12 @@ describe('SubmissionService', () => {
           },
         },
         {
+          provide: EvaluationService,
+          useValue: {
+            evaluate: jest.fn().mockResolvedValue(mockSubmission),
+          },
+        },
+        {
           provide: Logger,
           useValue: {
             log: jest.fn(),
@@ -123,6 +131,7 @@ describe('SubmissionService', () => {
     studentRepository = module.get<StudentRepository>(StudentRepository);
     submissionRepository = module.get<SubmissionRepository>(SubmissionRepository);
     videoProcessingService = module.get<VideoProcessingService>(VideoProcessingService);
+    evaluationService = module.get<EvaluationService>(EvaluationService);
   });
 
   it('should be defined', () => {
@@ -239,25 +248,38 @@ describe('SubmissionService', () => {
       expect(videoProcessingService.processVideo).toHaveBeenCalledTimes(1);
       expect(submissionRepository.create).not.toHaveBeenCalled();
     });
-  });
 
-  describe('generateHighlightText', () => {
-    it('하이라이트 텍스트를 올바르게 생성해야 합니다', () => {
-      const text = 'This is a test sentence. It needs highlights.';
-      const highlights = ['test sentence', 'highlights'];
-
-      const result = service['generateHighlightText'](text, highlights);
-
-      expect(result).toBe('This is a <b>test sentence</b>. It needs <b>highlights</b>.');
+    // success case
+    it('비디오 파일 없이 에세이만 제출하는 경우', async () => {
+      jest.spyOn(studentRepository, 'findById').mockResolvedValue(mockStudent);
+      jest.spyOn(submissionRepository, 'findByStudentAndComponent').mockResolvedValue(null);
+      jest.spyOn(submissionRepository, 'create').mockResolvedValue(mockSubmission as Submission);
+      // videoProcessingService.processVideo, blobStorageService.uploadFileAndGetSasUrl 호출 안 됨
+      const result = await service.createSubmission({
+        createSubmissionDto: mockCreateSubmissionDto,
+      });
+      expect(studentRepository.findById).toHaveBeenCalledWith(mockCreateSubmissionDto.studentId);
+      expect(submissionRepository.findByStudentAndComponent).toHaveBeenCalledWith(
+        mockCreateSubmissionDto.studentId,
+        mockCreateSubmissionDto.componentType,
+      );
+      expect(submissionRepository.create).toHaveBeenCalled();
+      expect(result).toBeInstanceOf(SubmissionResponseDto);
+      expect(result.studentName).toBe(mockStudent.studentName);
+      expect(result.score).toBe(mockSubmission.score);
+      expect(result.mediaUrl).toBeUndefined();
     });
 
-    it('하이라이트가 없으면 원본 텍스트를 반환해야 합니다', () => {
-      const text = 'This is a test sentence.';
-      const highlights: string[] = [];
-
-      const result = service['generateHighlightText'](text, highlights);
-
-      expect(result).toBe(text);
+    it('AI 평가 서비스에서 에러가 발생하면 InternalServerErrorException을 던져야 합니다', async () => {
+      jest.spyOn(studentRepository, 'findById').mockResolvedValue(mockStudent);
+      jest.spyOn(submissionRepository, 'findByStudentAndComponent').mockResolvedValue(null);
+      jest.spyOn(submissionRepository, 'create').mockResolvedValue(mockSubmission as Submission);
+      jest.spyOn(evaluationService, 'evaluate').mockRejectedValue(new Error('AI 평가 오류'));
+      await expect(
+        service.createSubmission({
+          createSubmissionDto: mockCreateSubmissionDto,
+        }),
+      ).rejects.toThrow(InternalServerErrorException);
     });
   });
 });

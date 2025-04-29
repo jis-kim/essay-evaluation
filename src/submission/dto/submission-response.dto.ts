@@ -50,9 +50,6 @@ export class SubmissionResponseDto {
     mediaUrls?: { video?: string; audio?: string },
   ): SubmissionResponseDto {
     const responseDto = new SubmissionResponseDto();
-
-    //responseDto.result = 'ok'; -> 공통 response
-    //responseDto.message = null;
     responseDto.studentId = submission.studentId;
     responseDto.studentName = studentName;
     responseDto.score = submission.score || undefined;

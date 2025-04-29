@@ -1,3 +1,5 @@
+import { MediaType } from '@prisma/client';
+
 export type SubmissionMediaInfo = {
   type: MediaType;
   path: string;
@@ -13,5 +15,3 @@ export type SubmissionMediaCreateInput = {
   size: number;
   format: string;
 };
-
-export type MediaType = 'VIDEO' | 'AUDIO';
