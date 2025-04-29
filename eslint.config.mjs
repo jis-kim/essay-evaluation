@@ -15,7 +15,8 @@ export default tseslint.config(
       'build',
       'coverage',
       '*.lock',
-      'package.json'
+      'package.json',
+      'test/**',
     ],
   },
   eslint.configs.recommended,

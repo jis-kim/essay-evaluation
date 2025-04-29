@@ -86,17 +86,18 @@ export class SubmissionService {
     const apiLatency = Date.now() - startTime;
 
     // DTO 클래스의 정적 메소드를 사용하여 응답 변환
-    return SubmissionResponseDto.fromSubmission(
+    return SubmissionResponseDto.fromSubmission({
       submission,
       studentName,
       apiLatency,
-      mediaCreateInput.length > 0
-        ? {
-            video: mediaCreateInput.find((m) => m.type === MediaType.VIDEO)?.url,
-            audio: mediaCreateInput.find((m) => m.type === MediaType.AUDIO)?.url,
-          }
-        : undefined,
-    );
+      mediaUrls:
+        mediaCreateInput.length > 0
+          ? {
+              video: mediaCreateInput.find((m) => m.type === MediaType.VIDEO)?.url,
+              audio: mediaCreateInput.find((m) => m.type === MediaType.AUDIO)?.url,
+            }
+          : undefined,
+    });
   }
 
   // 미디어 처리 + 업로드

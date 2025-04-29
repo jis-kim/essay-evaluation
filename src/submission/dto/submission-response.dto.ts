@@ -43,12 +43,17 @@ export class SubmissionResponseDto {
   /**
    * Submission 엔티티를 SubmissionResponseDto로 변환
    */
-  static fromSubmission(
-    submission: Submission,
-    studentName: string,
-    apiLatency: number,
-    mediaUrls?: { video?: string; audio?: string },
-  ): SubmissionResponseDto {
+  static fromSubmission({
+    submission,
+    studentName,
+    apiLatency,
+    mediaUrls,
+  }: {
+    submission: Submission;
+    studentName: string;
+    apiLatency: number;
+    mediaUrls?: { video?: string; audio?: string };
+  }): SubmissionResponseDto {
     const responseDto = new SubmissionResponseDto();
     responseDto.studentId = submission.studentId;
     responseDto.studentName = studentName;

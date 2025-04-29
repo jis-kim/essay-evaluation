@@ -60,6 +60,13 @@ export class EvaluationService {
         where: { id: submissionId },
         data: { status: SubmissionStatus.FAILED },
       });
+
+      if (revisionId) {
+        await this.prisma.revision.update({
+          where: { id: revisionId },
+          data: { status: SubmissionStatus.FAILED },
+        });
+      }
       throw error;
     }
   }
