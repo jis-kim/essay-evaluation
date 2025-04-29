@@ -8,6 +8,9 @@ export interface BaseResponse {
 
 // 성공 응답을 위한 타입
 export type SuccessResponse<T> = T & BaseResponse;
+export type ErrorResponse = BaseResponse & {
+  cause: string;
+};
 
 @ApiExtraModels()
 export class CommonResponseDto {
@@ -32,10 +35,11 @@ export class CommonResponseDto {
     };
   }
 
-  static error(message: string): BaseResponse {
+  static error(name: string, message: string): ErrorResponse {
     return {
       result: 'error',
-      message,
+      message: name,
+      cause: message,
     };
   }
 }
