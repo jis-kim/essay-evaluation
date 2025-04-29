@@ -1,4 +1,4 @@
-import { extname } from 'path';
+import { join, extname } from 'path';
 
 import {
   Body,
@@ -56,7 +56,7 @@ export class SubmissionController {
   @UseInterceptors(
     FileInterceptor('videoFile', {
       storage: diskStorage({
-        destination: MEDIA_DIR,
+        destination: join(__dirname, '..', '..', MEDIA_DIR),
         filename: (req, file, cb) => {
           const uniqueFilename = `${ulid()}${extname(file.originalname)}`;
           cb(null, uniqueFilename);

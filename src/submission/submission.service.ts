@@ -1,15 +1,10 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { MediaType, Submission } from '@prisma/client';
 
 import { BlobStorageService } from '../blob-storage/blob-storage.service';
 import { SubmissionMediaCreateInput } from '../common/types/media.types';
 import { EvaluationService } from '../evaluation/evaluation.service';
+import { CustomLogger } from '../logger/custom-logger.service';
 import { StudentRepository, SubmissionRepository } from '../prisma/repository';
 import { VideoProcessingService } from '../video-processing/video-processing.service';
 
@@ -18,14 +13,13 @@ import { SubmissionResponseDto } from './dto/submission-response.dto';
 
 @Injectable()
 export class SubmissionService {
-  private readonly logger = new Logger(SubmissionService.name);
-
   constructor(
     private readonly studentRepository: StudentRepository,
     private readonly submissionRepository: SubmissionRepository,
     private readonly videoProcessingService: VideoProcessingService,
     private readonly blobStorageService: BlobStorageService,
     private readonly evaluationService: EvaluationService,
+    private readonly logger: CustomLogger,
   ) {}
 
   async createSubmission({
@@ -73,7 +67,10 @@ export class SubmissionService {
         content: submitText,
       });
     } catch (error) {
-      this.logger.error(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(errorMessage, errorStack, 'SubmissionService');
       throw new InternalServerErrorException('제출 처리 중 오류가 발생했습니다.');
     } finally {
       // 미디어 정보 삭제

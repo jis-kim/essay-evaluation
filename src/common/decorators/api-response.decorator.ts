@@ -1,4 +1,3 @@
-// src/common/decorators/api-response.decorator.ts 파일 생성
 import { applyDecorators, Type } from '@nestjs/common';
 import { ApiExtraModels, ApiOkResponse, getSchemaPath } from '@nestjs/swagger';
 

@@ -1,17 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Submission, SubmissionStatus } from '@prisma/client';
 import { ulid } from 'ulid';
 
 import { AiService } from '../ai/ai.service';
+import { CustomLogger } from '../logger/custom-logger.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class EvaluationService {
-  private readonly logger = new Logger(EvaluationService.name);
-
   constructor(
     private readonly aiService: AiService,
     private readonly prisma: PrismaService,
+    private readonly logger: CustomLogger,
   ) {}
 
   async evaluate({
@@ -54,7 +54,10 @@ export class EvaluationService {
         });
       });
     } catch (error) {
-      this.logger.error('AI 평가 중 오류 발생:', error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+
+      this.logger.error(errorMessage, errorStack, 'EvaluationService');
       // update submission status to failed
       await this.prisma.submission.update({
         where: { id: submissionId },

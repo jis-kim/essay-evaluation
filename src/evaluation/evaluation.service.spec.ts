@@ -3,11 +3,22 @@ import { EvaluationService } from './evaluation.service';
 import { AiService } from '../ai/ai.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionStatus } from '@prisma/client';
+import { CustomLogger } from '../logger/custom-logger.service';
 
 describe('EvaluationService', () => {
   let service: EvaluationService;
   let aiService: AiService;
   let prisma: PrismaService;
+  let logger: CustomLogger;
+
+  const mockLogger = {
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+    silly: jest.fn(),
+  };
 
   const mockSubmission = {
     id: 'sub-1',
@@ -43,12 +54,17 @@ describe('EvaluationService', () => {
             },
           },
         },
+        {
+          provide: CustomLogger,
+          useValue: mockLogger,
+        },
       ],
     }).compile();
 
     service = module.get<EvaluationService>(EvaluationService);
     aiService = module.get<AiService>(AiService);
     prisma = module.get<PrismaService>(PrismaService);
+    logger = module.get<CustomLogger>(CustomLogger);
   });
 
   describe('evaluate', () => {
