@@ -1,6 +1,5 @@
 import * as fs from 'fs';
-import * as path from 'path';
-import { join } from 'path';
+import { parse, join, basename } from 'path';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { MediaType } from '@prisma/client';
@@ -30,11 +29,10 @@ export class VideoProcessingService {
    */
   async deleteMedia(filename: string): Promise<void> {
     const dir = join(__dirname, '..', '..', MEDIA_DIR);
-    console.log(dir);
 
     try {
       const files = await fs.promises.readdir(dir);
-      const baseFilename = path.parse(filename).name;
+      const baseFilename = parse(filename).name;
       const targetFiles = files.filter((file) => file.startsWith(baseFilename));
 
       if (targetFiles.length === 0) {
@@ -43,7 +41,7 @@ export class VideoProcessingService {
       }
 
       targetFiles.forEach((file) => {
-        const fullPath = path.join(dir, file);
+        const fullPath = join(dir, file);
         fs.promises.unlink(fullPath).catch((err) => {
           if (err instanceof Error) {
             this.logger.error(`파일 삭제 실패 ${fullPath}: ${err.message}`);
@@ -65,8 +63,8 @@ export class VideoProcessingService {
    */
   private removeLeftSide(videoPath: string): Promise<string> {
     // 왼쪽 사이드 제거 로직 구현
-    const { dir, name, ext } = path.parse(videoPath);
-    const outputPath = path.join(dir, `${name}${MEDIA_SUFFIXES.left_removed}${ext}`);
+    const { dir, name, ext } = parse(videoPath);
+    const outputPath = join(dir, `${name}${MEDIA_SUFFIXES.left_removed}${ext}`);
 
     this.logger.log(`Removing left side of video: ${videoPath}`);
 
@@ -99,9 +97,9 @@ export class VideoProcessingService {
    * @returns 오디오 추출 및 오디오 제거된 비디오 경로 (audioPath, noAudioVideoPath)
    */
   private async separateAudioAndVideo(videoPath: string): Promise<{ audioPath: string; noAudioVideoPath: string }> {
-    const { dir, name } = path.parse(videoPath);
-    const audioPath = path.join(dir, `${name}${MEDIA_SUFFIXES.audio}.mp3`);
-    const noAudioVideoPath = path.join(dir, `${name}${MEDIA_SUFFIXES.no_audio}.mp4`);
+    const { dir, name } = parse(videoPath);
+    const audioPath = join(dir, `${name}${MEDIA_SUFFIXES.audio}.mp3`);
+    const noAudioVideoPath = join(dir, `${name}${MEDIA_SUFFIXES.no_audio}.mp4`);
 
     this.logger.log(`Extracting audio from video: ${videoPath}`);
 
@@ -167,7 +165,7 @@ export class VideoProcessingService {
         const format = metadata.format;
         resolve({
           type,
-          filename: path.basename(filePath),
+          filename: basename(filePath),
           path: filePath,
           size: Number(format.size),
           format: format.format_name || '',

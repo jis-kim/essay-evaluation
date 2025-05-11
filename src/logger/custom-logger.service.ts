@@ -34,7 +34,6 @@ export class CustomLogger implements LoggerService {
   private logDir: string = join(__dirname, '..', '..', 'logs');
   constructor(private readonly appConfigService: AppConfigService) {
     this.initializeLogger();
-    console.log(this.logDir);
   }
 
   private formatMetadata(metadata: Record<string, unknown>): string {
