@@ -118,7 +118,7 @@ export class BlobStorageService {
         blobName: blobClient.name,
         permissions: BlobSASPermissions.parse('r'), // 읽기 권한만 부여
         startsOn: new Date(),
-        expiresOn: new Date(new Date().valueOf() + expiryHours * 60 * 60 * 1000),
+        expiresOn: new Date(new Date().valueOf() + expiryHours * 60 * 60 * 1000), // 24시간 후 만료
         protocol: SASProtocol.Https,
       };
 

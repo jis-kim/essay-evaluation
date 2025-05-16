@@ -37,11 +37,6 @@ describe('SubmissionService', () => {
     feedback: 'Good essay.',
     highlights: ['Good expression', 'Grammar issues'],
     status: SubmissionStatus.COMPLETED,
-    result: {
-      score: 8,
-      feedback: 'Good essay.',
-      highlights: ['Good expression', 'Grammar issues'],
-    },
     createdAt: new Date(),
     updatedAt: new Date(),
   };

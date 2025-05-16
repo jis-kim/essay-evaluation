@@ -12,7 +12,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
           url: config.databaseConfig.url,
         },
       },
-      log: config.isDevelopment ? ['query', 'info', 'warn', 'error'] : ['error'],
+      log: config.isDevelopment ? ['query', 'info', 'warn', 'error'] : ['error'], // prisma log level
     });
   }
 

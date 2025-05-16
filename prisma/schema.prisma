@@ -26,7 +26,6 @@ model Submission {
   componentType       String            @map("component_type") @db.VarChar(100)
   submitText          String            @map("submit_text") @db.Text
   highlightSubmitText String?           @map("highlight_submit_text") @db.Text
-  result              Json?             @db.JsonB
   score               Int?              @db.Integer
   feedback            String?           @db.Text
   highlights          String[]          @db.Text
@@ -65,22 +64,26 @@ model SubmissionLog {
   submissionId String     @map("submission_id") @db.Uuid
   revisionId   String?    @map("revision_id") @db.Uuid
   submission   Submission @relation(fields: [submissionId], references: [id])
+  revision     Revision?  @relation(fields: [revisionId], references: [id])
   result       Json?      @db.JsonB
   latency      Int        @db.Integer
   traceId      String     @map("trace_id") @db.VarChar(100)
   createdAt    DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
 
+  @@unique([submissionId])
+  @@unique([revisionId])
   @@map("submission_logs")
 }
 
 // 재평가 이력
 model Revision {
-  id           String           @id @default(uuid()) @db.Uuid
-  submissionId String           @map("submission_id") @db.Uuid
-  submission   Submission       @relation(fields: [submissionId], references: [id])
-  status       SubmissionStatus @default(PENDING)
-  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt    DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  id            String           @id @default(uuid()) @db.Uuid
+  submissionId  String           @map("submission_id") @db.Uuid
+  submission    Submission       @relation(fields: [submissionId], references: [id])
+  status        SubmissionStatus @default(PENDING)
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  SubmissionLog SubmissionLog[]
 
   @@map("revisions")
 }
@@ -92,7 +95,7 @@ model DailyStats {
   totalCount   Int      @default(0) @map("total_count")
   successCount Int      @default(0) @map("success_count")
   failCount    Int      @default(0) @map("fail_count")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([date])
   @@index([date])
@@ -107,7 +110,7 @@ model WeeklyStats {
   totalCount   Int      @default(0) @map("total_count")
   successCount Int      @default(0) @map("success_count")
   failCount    Int      @default(0) @map("fail_count")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([startDate])
   @@index([startDate])
@@ -124,7 +127,7 @@ model MonthlyStats {
   totalCount   Int      @default(0) @map("total_count")
   successCount Int      @default(0) @map("success_count")
   failCount    Int      @default(0) @map("fail_count")
-  createdAt    DateTime @default(now()) @map("created_at") @db.Date
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([yearMonth])
   @@index([yearMonth])
